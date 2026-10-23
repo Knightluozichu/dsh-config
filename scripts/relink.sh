@@ -17,11 +17,12 @@ UNDERSTAND_ROOT="${UNDERSTAND_ROOT:-$UNDERSTAND_ROOT_DEFAULT}"
 log() { printf '  %s\n' "$*"; }
 
 # 找到 ponytail 最高版本目录下的 skills/
+# 实际结构：cache/ponytail/ponytail/<version>/skills，深度不固定，用宽松 maxdepth
 find_ponytail_skills() {
   local base="$PONYTAIL_ROOT"
   [[ -d "$base" ]] || return 1
   local cand
-  cand=$(find "$base" -mindepth 2 -maxdepth 2 -type d -name skills 2>/dev/null | sort -V | tail -n 1)
+  cand=$(find "$base" -maxdepth 5 -type d -name skills 2>/dev/null | sort -V | tail -n 1)
   [[ -n "$cand" ]] && printf '%s' "$cand"
 }
 
