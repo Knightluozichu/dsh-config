@@ -1,0 +1,22 @@
+# ---- 秘密：任何情况下都不入库 ----
+.credentials.yaml
+.credentials.json
+.credentials*
+.env
+.env.*
+
+# ---- 由模板生成，只提交 template ----
+claude/settings.json
+
+# ---- 机器状态与体积物 ----
+sessions/
+profiles/
+node_modules/
+storages/
+cache/
+*.log
+
+# ---- OS 噪声 ----
+.DS_Store
+Thumbs.db
+desktop.ini

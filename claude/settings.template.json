@@ -1,0 +1,68 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "${ANTHROPIC_BASE_URL}",
+    "API_TIMEOUT_MS": "3000000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN": "1",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
+    "OTEL_SDK_DISABLED": "true",
+    "ANTHROPIC_AUTH_TOKEN": "${ANTHROPIC_AUTH_TOKEN}",
+    "CLAUDE_CODE_AUTO_MODE_SERVER": "0"
+  },
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "WebFetch",
+      "NotebookEdit"
+    ],
+    "defaultMode": "bypassPermissions",
+    "deny": [
+      "Agent",
+      "mcp__9remote__*",
+      "mcp__Claude_Browser__*",
+      "mcp__ai-game-developer__*",
+      "mcp__ccd_directory__*",
+      "mcp__ccd_host__*",
+      "mcp__ccd_pr__*",
+      "mcp__ccd_session__*",
+      "mcp__ccd_session_mgmt__*",
+      "mcp__ccd_settings__*",
+      "mcp__ccd_sidebar__*",
+      "mcp__ccd_turn__*",
+      "mcp__ccd_view__*",
+      "mcp__ccd_window__*",
+      "mcp__codegraph__*",
+      "mcp__plugin_context7_context7__*",
+      "mcp__plugin_playwright_playwright__*",
+      "mcp__scheduled-tasks__*",
+      "mcp__terminal__*"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codegraph prompt-hook"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "light-daltonized",
+  "verbose": true,
+  "allowedMcpServers": [
+    {
+      "serverName": "UnityMCP"
+    }
+  ]
+}

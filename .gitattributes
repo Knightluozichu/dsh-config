@@ -1,0 +1,14 @@
+# 跨平台换行：shell 脚本必须是 LF，否则 macOS 报 bad interpreter
+* text=auto eol=lf
+
+*.sh  text eol=lf
+*.bash text eol=lf
+*.ps1 text eol=crlf
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+
+*.png binary
+*.jpg binary
+*.zip binary

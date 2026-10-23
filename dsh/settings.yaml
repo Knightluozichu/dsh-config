@@ -1,0 +1,46 @@
+ui-onboarding:
+  welcomeNoticeVersion: 2026-08-13.1
+agent-default-model:
+  provider: fuyao
+  model: fuyao-work
+llm:
+  # 这里！！把 llm-pi-ai 修改为 llm
+  providers:
+    fuyao:
+      models:
+        - id: fuyao-coding
+          name: Fuyao Coding
+          contextWindow: 1000000
+          input: []
+          compat: {}
+        - id: fuyao-work
+          name: Fuyao Work
+          input: []
+          compat: {}
+        - id: fuyao-data
+          name: Fuyao Data
+      api: openai-completions
+llm-deepseek:
+  models:
+    - id: deepseek-v4-flash
+      name: DeepSeek-V4-Flash
+      contextWindow: 1000000
+    - id: deepseek-v4-pro
+      name: DeepSeek-V4-Pro
+      contextWindow: 1000000
+    - id: deepseek-v4-flash-vision-exp
+      name: deepseek-v4-flash-vision-exp
+permission:
+  defaultPreset: danger-full-access
+agent-presets:
+  default: code
+llm-pi-ai:
+  providers:
+    fuyao:
+      apiKeyEnv: FUYAO_API_KEY
+      api: openai-completions
+      baseURL: http://fuyao-ai-gateway.xiaopeng.link/v1
+      models:
+        - id: fuyao-work
+        - id: fuyao-coding
+        - id: fuyao-data
