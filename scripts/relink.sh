@@ -4,62 +4,110 @@
 # 用法：bash scripts/relink.sh [--check]
 set -euo pipefail
 
+# macOS 自带 bash 3.2：变量必须显式 ${} 定界，否则紧跟的中文/全角标点会被当成变量名的一部分
 CHECK_ONLY=0
-[[ "${1:-}" == "--check" ]] && CHECK_ONLY=1
+if [ "${1:-}" = "--check" ]; then
+  CHECK_ONLY=1
+fi
 
 SKILLS_DIR="${HOME}/.agents/skills"
 PONYTAIL_ROOT_DEFAULT="${HOME}/.codex/plugins/cache/ponytail"
 UNDERSTAND_ROOT_DEFAULT="${HOME}/.understand-anything/repo/understand-anything-plugin/skills"
 
-PONYTAIL_ROOT="${PONYTAIL_ROOT:-$PONYTAIL_ROOT_DEFAULT}"
-UNDERSTAND_ROOT="${UNDERSTAND_ROOT:-$UNDERSTAND_ROOT_DEFAULT}"
+PONYTAIL_ROOT="${PONYTAIL_ROOT:-${PONYTAIL_ROOT_DEFAULT}}"
+UNDERSTAND_ROOT="${UNDERSTAND_ROOT:-${UNDERSTAND_ROOT_DEFAULT}}"
 
-log() { printf '  %s\n' "$*"; }
+log() { printf '  %s\n' "${*}"; }
 
-# 找到 ponytail 最高版本目录下的 skills/
-# 实际结构：cache/ponytail/ponytail/<version>/skills，深度不固定，用宽松 maxdepth
+# 实际结构：.../ponytail/<version>/.openclaw/skills，深度不固定
 find_ponytail_skills() {
-  local base="$PONYTAIL_ROOT"
-  [[ -d "$base" ]] || return 1
+  local base="${PONYTAIL_ROOT}"
+  if [ ! -d "${base}" ]; then
+    return 1
+  fi
   local cand
-  cand=$(find "$base" -maxdepth 5 -type d -name skills 2>/dev/null | sort -V | tail -n 1)
-  [[ -n "$cand" ]] && printf '%s' "$cand"
+  cand="$(find "${base}" -maxdepth 5 -type d -name skills 2>/dev/null | sort -V | tail -n 1)"
+  if [ -n "${cand}" ]; then
+    printf '%s' "${cand}"
+  else
+    return 1
+  fi
 }
 
+PONYTAIL_SKILLS=""
 PONYTAIL_SKILLS="$(find_ponytail_skills || true)"
 
-link_pairs=()
-if [[ -n "$PONYTAIL_SKILLS" ]]; then
+link_pairs=""
+add_pair() {
+  # 追加 "名字:真实路径" 到列表（换行分隔，避免 bash 3.2 数组下标语法差异）
+  if [ -z "${link_pairs}" ]; then
+    link_pairs="$1:$2"
+  else
+    link_pairs="${link_pairs}
+$1:$2"
+  fi
+}
+
+if [ -n "${PONYTAIL_SKILLS}" ]; then
   for n in ponytail ponytail-audit ponytail-debt ponytail-gain ponytail-help ponytail-review; do
-    [[ -d "$PONYTAIL_SKILLS/$n" ]] && link_pairs+=("$n:$PONYTAIL_SKILLS/$n")
+    if [ -d "${PONYTAIL_SKILLS}/${n}" ]; then
+      add_pair "${n}" "${PONYTAIL_SKILLS}/${n}"
+    fi
   done
 else
-  log "未找到 ponytail 插件源（$PONYTAIL_ROOT），跳过 $((0)) 个链接"
+  log "未找到 ponytail 插件源: ${PONYTAIL_ROOT}（跳过 6 个 skill）"
 fi
 
-if [[ -d "$UNDERSTAND_ROOT" ]]; then
+if [ -d "${UNDERSTAND_ROOT}" ]; then
   for n in understand understand-chat understand-dashboard understand-diff understand-domain \
            understand-explain understand-figma understand-knowledge understand-onboard; do
-    [[ -d "$UNDERSTAND_ROOT/$n" ]] && link_pairs+=("$n:$UNDERSTAND_ROOT/$n")
+    if [ -d "${UNDERSTAND_ROOT}/${n}" ]; then
+      add_pair "${n}" "${UNDERSTAND_ROOT}/${n}"
+    fi
   done
 else
-  log "未找到 understand-anything 源（$UNDERSTAND_ROOT），跳过"
+  log "未找到 understand-anything 源: ${UNDERSTAND_ROOT}（跳过 9 个 skill）"
 fi
 
-echo "计划重建 ${#link_pairs[@]} 个软链接 → $SKILLS_DIR"
-[[ $CHECK_ONLY -eq 1 ]] && { printf '%s\n' "${link_pairs[@]:-}"; exit 0; }
+count=0
+if [ -n "${link_pairs}" ]; then
+  count="$(printf '%s\n' "${link_pairs}" | grep -c .)"
+fi
 
-mkdir -p "$SKILLS_DIR"
-ok=0; bad=0
-for pair in "${link_pairs[@]:-}"; do
-  [[ -z "$pair" ]] && continue
-  name="${pair%%:*}"; target="${pair#*:}"
-  cur="$SKILLS_DIR/$name"
+echo "计划重建 ${count} 个软链接 -> ${SKILLS_DIR}"
+
+if [ "${CHECK_ONLY}" -eq 1 ]; then
+  if [ -n "${link_pairs}" ]; then
+    printf '%s\n' "${link_pairs}"
+  fi
+  exit 0
+fi
+
+mkdir -p "${SKILLS_DIR}"
+ok=0
+bad=0
+while IFS= read -r pair; do
+  if [ -z "${pair}" ]; then
+    continue
+  fi
+  name="${pair%%:*}"
+  target="${pair#*:}"
+  cur="${SKILLS_DIR}/${name}"
   # 已有真实目录则不动（用户手改过的优先）
-  if [[ -e "$cur" && ! -L "$cur" ]]; then log "跳过真实目录 $name"; continue; fi
-  ln -sfn "$target" "$cur"
-  if [[ -e "$cur/SKILL.md" ]]; then ok=$((ok+1)); else bad=$((bad+1)); log "坏链 $name → $target"; fi
-done
+  if [ -e "${cur}" ] && [ ! -L "${cur}" ]; then
+    log "跳过真实目录 ${name}"
+    continue
+  fi
+  ln -sfn "${target}" "${cur}"
+  if [ -e "${cur}/SKILL.md" ]; then
+    ok=$((ok + 1))
+  else
+    bad=$((bad + 1))
+    log "坏链 ${name} -> ${target}"
+  fi
+done <<EOF
+${link_pairs}
+EOF
 
-echo "已重建 $ok 个，异常 $bad 个"
-echo "校验：find ~/.agents/skills -maxdepth 1 -type l ! -exec test -e {}/SKILL.md \; -print"
+echo "已重建 ${ok} 个，异常 ${bad} 个"
+echo "校验：find ~/.agents/skills -maxdepth 1 -type l ! -exec test -e {}/SKILL.md \\; -print"
